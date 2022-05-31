@@ -1,12 +1,4 @@
-
 import 'package:flutter/material.dart';
-
-class KeyBindrr {
-  String character;
-  bool isPressed;
-  KeyBindrr({this.character = '', this.isPressed = false});
-}
-
 class SpecialKey {
   String character;
 
@@ -15,4 +7,14 @@ class SpecialKey {
   Size size;
   SpecialKey(
       {this.character = '', this.position = 0, this.size = const Size(60, 60)});
+}
+
+class FurdleKey {
+  String character;
+  bool isPhysicalKey;
+  bool isPressed;
+  FurdleKey(
+      {this.character = '',
+      this.isPressed = false,
+      this.isPhysicalKey = false});
 }

@@ -7,7 +7,7 @@ import 'package:furdle/pages/furdle.dart';
 
 class KeyBoardView extends StatefulWidget {
   final bool isFurdleMode;
-  final Function(String, bool) onKeyEvent;
+  final Function(FurdleKey) onKeyEvent;
   final FocusNode? keyboardFocus;
   const KeyBoardView(
       {Key? key,
@@ -23,7 +23,7 @@ class KeyBoardView extends StatefulWidget {
 
 class _KeyBoardViewState extends State<KeyBoardView> {
   late FocusNode keyboardFocus;
-  late KeyBindrr bindrr;
+  late FurdleKey _fKey;
 
   @override
   void dispose() {
@@ -34,7 +34,7 @@ class _KeyBoardViewState extends State<KeyBoardView> {
   @override
   void initState() {
     super.initState();
-    bindrr = KeyBindrr(character: '', isPressed: false);
+    _fKey = FurdleKey(character: '', isPressed: false);
     keyboardFocus = widget.keyboardFocus ?? FocusNode();
     controller = widget.controller ?? TextEditingController();
   }
@@ -56,21 +56,22 @@ class _KeyBoardViewState extends State<KeyBoardView> {
     if (isCapsLockOn && label == 'Caps Lock') {
       return true;
     } else {
-      return bindrr.character == label && bindrr.isPressed;
+      return _fKey.character == label && _fKey.isPressed;
     }
   }
 
   /// update special Characters
   void updateBindrr(String x) {
     setState(() {
-      bindrr.character = x;
+      _fKey.character = x;
     });
-    widget.onKeyEvent(bindrr.character, false);
+    final fKey = FurdleKey(character: _fKey.character, isPhysicalKey: false);
+    widget.onKeyEvent(fKey);
   }
 
   @override
   Widget build(BuildContext context) {
-    WidgetsBinding.instance!.addPostFrameCallback((timeStamp) {
+    WidgetsBinding.instance.addPostFrameCallback((timeStamp) {
       FocusScope.of(context).requestFocus(keyboardFocus);
     });
     return LayoutBuilder(
@@ -84,16 +85,18 @@ class _KeyBoardViewState extends State<KeyBoardView> {
             {Map<String, SpecialKey>? specialKeys}) {
           final _characters =
               isCapsLockOn ? string.toUpperCase() : string.toLowerCase();
-          final keys = _characters.buildKeys(bindrr, keySize: keySize,
+          final keys = _characters.buildKeys(_fKey, keySize: keySize,
               onPressed: (character) {
             setState(() {
-              bindrr.character = character;
+              _fKey.character = character;
             });
             HapticFeedback.heavyImpact();
-            widget.onKeyEvent(bindrr.character, false);
+            final fKey =
+                FurdleKey(character: _fKey.character, isPhysicalKey: false);
+            widget.onKeyEvent(_fKey);
           });
 
-          /// Special Key Events ![A-z]
+          /// Special Key Events ![A-Z]
           if (specialKeys != null && !widget.isFurdleMode) {
             for (var key in specialKeys.keys) {
               final specialKey = specialKeys[key];
@@ -139,15 +142,17 @@ class _KeyBoardViewState extends State<KeyBoardView> {
                       isCapsLockOn = !isCapsLockOn;
                     }
                     setState(() {
-                      bindrr.isPressed = true;
-                      bindrr.character = character;
+                      _fKey.isPressed = true;
+                      _fKey.character = character;
                     });
-                    widget.onKeyEvent(bindrr.character, true);
+                    final fKey = FurdleKey(
+                        character: _fKey.character, isPhysicalKey: false);
+                    widget.onKeyEvent(fKey);
                   } else if (event is KeyUpEvent) {
                     /// Delay for key fade animation
                     Future.delayed(const Duration(milliseconds: 200), () {
                       setState(() {
-                        bindrr.isPressed = false;
+                        _fKey.isPressed = false;
                       });
                     });
                   }
@@ -217,7 +222,7 @@ class _KeyBoardViewState extends State<KeyBoardView> {
                             ? KeyBuilder(
                                 keyLabel: 'delete',
                                 onPressed: (x) => updateBindrr(x),
-                                isPressed: isKeyPressed('Backspace'),
+                                isPressed: isKeyPressed('Delete'),
                                 keySize:
                                     Size(keySize.width * 1.4, keySize.height))
                             : const SizedBox(),
@@ -234,7 +239,7 @@ class _KeyBoardViewState extends State<KeyBoardView> {
 }
 
 extension on String {
-  List<Widget> buildKeys(KeyBindrr keyBindrr,
+  List<Widget> buildKeys(FurdleKey keyBindrr,
           {Function(String)? onPressed, Size? keySize}) =>
       split('')
           .map((e) => KeyBuilder(

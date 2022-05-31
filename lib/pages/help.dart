@@ -2,6 +2,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:furdle/exports.dart';
 import 'package:furdle/utils/navigator.dart';
+import 'package:furdle/utils/settings_service.dart';
 import 'package:furdle/utils/utility.dart';
 
 class HelpPage extends StatelessWidget {
@@ -39,8 +40,6 @@ class HelpPage extends StatelessWidget {
       );
     }
 
-    final screenSize = MediaQuery.of(context).size;
-
     return Scaffold(
       appBar: AppBar(
           automaticallyImplyLeading: false,
@@ -56,7 +55,7 @@ class HelpPage extends StatelessWidget {
         padding: const EdgeInsets.symmetric(horizontal: 16.0),
         child: SingleChildScrollView(
           child: Column(
-            crossAxisAlignment: screenSize.width < 600
+            crossAxisAlignment: SettingsService.screenSize.width < 600
                 ? CrossAxisAlignment.start
                 : CrossAxisAlignment.center,
             children: [

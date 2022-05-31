@@ -24,6 +24,14 @@ class SettingsService {
     _isFurdleMode = value;
   }
 
+  static Size _screenSize = Size.zero;
+
+  static Size get screenSize => _screenSize;
+
+  static set screenSize(Size value) {
+    _screenSize = value;
+  }
+
   late SharedPreferences _sharedPreferences;
 
   late Stats _stats;

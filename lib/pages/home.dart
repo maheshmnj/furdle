@@ -8,15 +8,16 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:furdle/constants/constants.dart';
 import 'package:furdle/main.dart';
-import 'package:furdle/models/furdle.dart';
-import 'package:furdle/models/puzzle.dart';
+import 'package:furdle/models/models.dart';
 import 'package:furdle/pages/furdle.dart';
 import 'package:furdle/pages/help.dart';
 import 'package:furdle/pages/keyboard.dart';
 import 'package:furdle/pages/settings.dart';
 import 'package:furdle/utils/navigator.dart';
+import 'package:furdle/utils/settings_service.dart';
 import 'package:furdle/utils/word.dart';
 import 'package:furdle/widgets/dialog.dart';
+import 'package:furdle/widgets/widgets.dart';
 import 'package:share_plus/share_plus.dart';
 
 class MyHomePage extends StatefulWidget {
@@ -112,22 +113,6 @@ class _MyHomePageState extends State<MyHomePage>
         });
   }
 
-  SnackBar _snackBar({required String message, required Duration duration}) {
-    final double margin = screenSize.width / 3;
-    return SnackBar(
-      content: Text(
-        message,
-        textAlign: TextAlign.center,
-      ),
-      behavior: SnackBarBehavior.floating,
-      duration: duration,
-      margin: EdgeInsets.only(
-          bottom: screenSize.height * 0.9 - kToolbarHeight,
-          right: screenSize.width < 500 ? 20 : margin,
-          left: screenSize.width < 500 ? 20 : margin),
-    );
-  }
-
   void showMessage(context, message,
       {bool isError = true,
       Duration? duration = const Duration(milliseconds: 1500)}) {
@@ -136,7 +121,7 @@ class _MyHomePageState extends State<MyHomePage>
       _shakeController.forward();
     }
     ScaffoldMessenger.of(context)
-        .showSnackBar(_snackBar(message: '$message', duration: duration!));
+        .showSnackBar(showSnackbar(message: '$message', duration: duration!));
   }
 
   @override
@@ -170,7 +155,7 @@ class _MyHomePageState extends State<MyHomePage>
     _docRef.get().then((firestore.DocumentSnapshot snapshot) {
       String word = '';
       if (snapshot.exists) {
-        word = snapshot['word'];
+        word = 'hello';
         challenge.number = snapshot['number'];
         challenge.date = (snapshot['date'] as firestore.Timestamp).toDate();
         challenge.puzzle = word;
@@ -265,14 +250,16 @@ class _MyHomePageState extends State<MyHomePage>
     });
   }
 
-  Future<void> onKeyEvent(String x, bool isPhysicalKeyEvent) async {
-    analytics.logEvent(name: 'KeyPressed', parameters: {'key': x});
+  /// Called when a physical or virtual key is pressed,
+  /// events fired in fudleMode [A-Z], [Delete], [Enter]
+  Future<void> onKeyEvent(FurdleKey fkey) async {
+    final character = fkey.character.toLowerCase();
+    analytics.logEvent(name: 'KeyPressed', parameters: {'key': character});
     if (isGameOver || settingsController.isAlreadyPlayed) {
-      if (isPhysicalKeyEvent) return;
+      if (fkey.isPhysicalKey) return;
       showFurdleDialog(title: gameAlreadyPlayed, message: 'Next puzzle in');
       return;
     }
-    final character = x.toLowerCase();
     if (character == 'enter') {
       /// check if word is complete
       final wordState = fState.validate();
@@ -317,7 +304,7 @@ class _MyHomePageState extends State<MyHomePage>
       }
     } else if (character == 'delete' || character == 'backspace') {
       fState.removeCell();
-    } else if (isLetter(x.toUpperCase())) {
+    } else if (isLetter(character.toUpperCase())) {
       if (fState.column >= _size.width) {
         return;
       }
@@ -337,11 +324,9 @@ class _MyHomePageState extends State<MyHomePage>
   ConfettiController confettiController = ConfettiController();
   bool isGameOver = false;
   late Puzzle challenge;
-  late Size screenSize;
   @override
   Widget build(BuildContext context) {
-    screenSize = MediaQuery.of(context).size;
-    // settingsController.clear();
+    SettingsService.screenSize = MediaQuery.of(context).size;
     return AnimatedBuilder(
         animation: settingsController,
         builder: (BuildContext context, Widget? child) {
@@ -350,7 +335,9 @@ class _MyHomePageState extends State<MyHomePage>
             fit: StackFit.expand,
             children: [
               Positioned(
-                  top: screenSize.width > 600 ? 0 : kToolbarHeight / 2,
+                  top: SettingsService.screenSize.width > 600
+                      ? 0
+                      : kToolbarHeight / 2,
                   // alignment: Alignment.topCenter,
                   child: FurdleBar(
                     title: 'Furdle',
@@ -392,13 +379,13 @@ class _MyHomePageState extends State<MyHomePage>
                   )),
               Positioned(
                 top: -100,
-                left: screenSize.width / 2,
+                left: SettingsService.screenSize.width / 2,
                 child: ConfettiWidget(
                   confettiController: confettiController,
                   blastDirection: 0,
                   blastDirectionality: BlastDirectionality.explosive,
                   particleDrag: 0.05,
-                  emissionFrequency: 0.35,
+                  emissionFrequency: 0.1,
                   minimumSize: const Size(10, 10),
                   maximumSize: const Size(50, 50),
                   numberOfParticles: 5,
@@ -459,9 +446,7 @@ class _MyHomePageState extends State<MyHomePage>
                                 keyboardFocus: keyboardFocusNode,
                                 controller: textController,
                                 isFurdleMode: true,
-                                onKeyEvent:
-                                    (String x, bool isPhysicalKeyEvent) =>
-                                        onKeyEvent(x, isPhysicalKeyEvent),
+                                onKeyEvent: (FurdleKey t) => onKeyEvent(t),
                               ),
                             ),
                           );
